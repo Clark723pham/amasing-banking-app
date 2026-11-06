@@ -1,4 +1,16 @@
-# Welcome to your Expo app 👋
+# Welcome to our Expo App! 👋
+
+This is an Banking App named Amasing Banking App by Group 1.
+
+## 👥 Team Members & Contributors
+- **Alburo, Jeffrey C.** - Contributor
+- **Cairel, Victor Alfred** - Contributor
+- **Fabello, Andre Miguel** - Contributor
+- **Nopuente, Fvienj Benett B.** - Contributor
+- **Pastillero, Clark Kent P.** - Contributor
+- **Salcedo, Lenard F.** - Contributor
+- **Sarsonas, Abel Jobran** - Contributor
+
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
