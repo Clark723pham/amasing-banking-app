@@ -1,20 +1,73 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 import BottomNav from "../components/BottomNav";
+// Import the update API from your data folder
+import { updateMpinAPI } from "../data/mockApi";
 
 export default function ProfileScreen() {
   const router = useRouter();
+
+  // --- NEW STATE FOR SECURITY MODAL ---
+  const [isSecurityVisible, setIsSecurityVisible] = useState(false);
+  const [currentMpin, setCurrentMpin] = useState("");
+  const [newMpin, setNewMpin] = useState("");
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- NEW HANDLER FOR UPDATING MPIN ---
+  const handleUpdateMpin = async () => {
+    setError("");
+    setSuccessMessage("");
+
+    if (currentMpin.length < 6 || newMpin.length < 6) {
+      setError("Both MPINs must be exactly 6 digits.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await updateMpinAPI(currentMpin, newMpin);
+      setSuccessMessage(response.message);
+      setCurrentMpin("");
+      setNewMpin("");
+      
+      // Optional: Auto-close the modal after 2 seconds on success
+      setTimeout(() => {
+        setIsSecurityVisible(false);
+        setSuccessMessage("");
+      }, 2000);
+      
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openSecuritySettings = () => {
+    setCurrentMpin("");
+    setNewMpin("");
+    setError("");
+    setSuccessMessage("");
+    setIsSecurityVisible(true);
+  };
 
   return (
     <LinearGradient colors={["black", "teal"]} style={styles.gradient}>
@@ -65,9 +118,11 @@ export default function ProfileScreen() {
               </View>
               <Ionicons name="chevron-forward" size={20} color="gray" />
             </TouchableOpacity>
+            
+            {/* UPDATED SECURITY BUTTON */}
             <TouchableOpacity
-              style={styles.option}
-              onPress={() => Alert.alert("Security", "Settings coming soon.")}
+              style={[styles.option, { borderBottomWidth: 0 }]} // Removed bottom border for last item
+              onPress={openSecuritySettings}
             >
               <View style={styles.optionIcon}>
                 <Ionicons
@@ -89,13 +144,76 @@ export default function ProfileScreen() {
 
         {/* BOTTOM NAVIGATION */}
         <BottomNav
-          active="home"
+          active="profile"
           onHome={() => router.replace("/home")}
           onTransactions={() => router.replace("/transactions")}
           onProfile={() => router.replace("/profile")}
           onLogout={() => router.replace("/")}
         />
       </SafeAreaView>
+
+      {/* --- NEW SECURITY MODAL --- */}
+      <Modal
+        visible={isSecurityVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsSecurityVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Update MPIN</Text>
+              <TouchableOpacity onPress={() => setIsSecurityVisible(false)}>
+                <Ionicons name="close" size={24} color="dimgray" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalLabel}>Current MPIN</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter current 6-digit MPIN"
+              secureTextEntry
+              keyboardType="numeric"
+              maxLength={6}
+              value={currentMpin}
+              onChangeText={(text) => {
+                setCurrentMpin(text.replace(/[^0-9]/g, ''));
+                setError("");
+              }}
+            />
+
+            <Text style={styles.modalLabel}>New MPIN</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter new 6-digit MPIN"
+              secureTextEntry
+              keyboardType="numeric"
+              maxLength={6}
+              value={newMpin}
+              onChangeText={(text) => {
+                setNewMpin(text.replace(/[^0-9]/g, ''));
+                setError("");
+              }}
+            />
+
+            {error !== "" && <Text style={styles.errorText}>{error}</Text>}
+            {successMessage !== "" && <Text style={styles.successText}>{successMessage}</Text>}
+
+            <TouchableOpacity 
+              style={styles.updateButton} 
+              onPress={handleUpdateMpin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.updateButtonText}>Save MPIN</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </LinearGradient>
   );
 }
@@ -172,4 +290,79 @@ const styles = StyleSheet.create({
   optionInfo: { flex: 1 },
   optionText: { fontSize: 14, fontWeight: "bold", color: "black" },
   optionDescription: { fontSize: 11, color: "gray", marginTop: 3 },
+
+  /* --- NEW STYLES FOR THE MODAL --- */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    padding: 25,
+    paddingBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "black",
+  },
+  modalLabel: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "dimgray",
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: "whitesmoke",
+    borderWidth: 1,
+    borderColor: "lightgray",
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    color: "black",
+    marginBottom: 10,
+    letterSpacing: 2,
+  },
+  updateButton: {
+    backgroundColor: "forestgreen",
+    borderRadius: 10,
+    paddingVertical: 15,
+    alignItems: "center",
+    marginTop: 20,
+    height: 50,
+    justifyContent: "center",
+  },
+  updateButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    marginTop: 5,
+    textAlign: "center",
+  },
+  successText: {
+    color: "forestgreen",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 5,
+    textAlign: "center",
+  },
 });

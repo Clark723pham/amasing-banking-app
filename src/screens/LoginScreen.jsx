@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,15 +14,18 @@ import {
   View,
 } from "react-native";
 
+// Import your mock API from the data folder
+import { verifyMpinAPI } from '../data/mockApi';
+
 export default function LoginScreen() {
   const router = useRouter();
 
   // State
   const [mpin, setMpin] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const demoPhoneNumber = "0917 123 4567";
-  const correctMPIN = "123456";
 
   const handleNumberPress = (number) => {
     if (mpin.length < 6) {
@@ -35,18 +39,24 @@ export default function LoginScreen() {
     setError("");
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (mpin.length < 6) {
       setError("Please enter your 6-digit MPIN.");
       return;
     }
 
-    if (mpin === correctMPIN) {
-      setError("");
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // Call the mock API imported at the top of the file
+      const responseData = await verifyMpinAPI(mpin);
       router.replace("/home");
-    } else {
-      setError("Incorrect MPIN. Please try again.");
+    } catch (err) {
+      setError(err.message);
       setMpin("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -119,6 +129,7 @@ export default function LoginScreen() {
                           style={styles.numberButton}
                           onPress={handleBackspace}
                           activeOpacity={0.7}
+                          disabled={isLoading}
                         >
                           <Ionicons
                             name="backspace-outline"
@@ -134,6 +145,7 @@ export default function LoginScreen() {
                         style={styles.numberButton}
                         onPress={() => handleNumberPress(key)}
                         activeOpacity={0.7}
+                        disabled={isLoading}
                       >
                         <Text style={styles.numberText}>{key}</Text>
                       </TouchableOpacity>
@@ -143,13 +155,18 @@ export default function LoginScreen() {
               ))}
             </View>
 
-            {/* LOGIN BUTTON */}
+            {/* LOGIN BUTTON WITH SPINNER */}
             <TouchableOpacity
               style={styles.actionButton}
               onPress={handleLogin}
               activeOpacity={0.8}
+              disabled={isLoading}
             >
-              <Text style={styles.actionButtonText}>Login</Text>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.actionButtonText}>Login</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
